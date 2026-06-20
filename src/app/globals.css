@@ -1,0 +1,220 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050816;
+  --foreground: #ffffff;
+  
+  --bg-base: #050816;
+  --bg-surface: #0b1220;
+  --bg-glass: rgba(11, 18, 32, 0.45);
+  --border-glass: rgba(255, 255, 255, 0.06);
+  
+  --color-cyan: #00f0ff;
+  --color-blue: #0072ff;
+  --color-purple: #a855f7;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-critical: #ef4444;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Global Reset & Ambient UI */
+body {
+  background-color: var(--bg-base);
+  color: var(--foreground);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Ambient glow bubbles in background */
+.glow-bubble {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+.bubble-purple {
+  top: 10%;
+  right: 15%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, var(--color-purple) 0%, transparent 70%);
+}
+
+.bubble-blue {
+  bottom: 15%;
+  left: 10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--color-blue) 0%, transparent 70%);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* HUD Glitch Badge */
+.hud-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-cyan);
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+/* Glowing Typography */
+.glow-text-cyan {
+  text-shadow: 0 0 8px var(--color-cyan);
+}
+
+.glow-text-purple {
+  text-shadow: 0 0 8px var(--color-purple);
+}
+
+/* Glassmorphism Panels */
+.glass-panel {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Glow Border Indicators */
+.glow-border-success { border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 4px 24px rgba(16, 185, 129, 0.06); }
+.glow-border-success:hover { border-color: rgba(16, 185, 129, 0.45); box-shadow: 0 4px 32px rgba(16, 185, 129, 0.15); }
+
+.glow-border-blue { border-color: rgba(0, 114, 255, 0.3); box-shadow: 0 4px 24px rgba(0, 114, 255, 0.06); }
+.glow-border-blue:hover { border-color: rgba(0, 114, 255, 0.45); box-shadow: 0 4px 32px rgba(0, 114, 255, 0.15); }
+
+.glow-border-critical { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 4px 24px rgba(239, 68, 68, 0.06); animation: redCardPulse 4s infinite alternate; }
+@keyframes redCardPulse {
+  0% { box-shadow: 0 4px 24px rgba(239, 68, 68, 0.05); }
+  100% { box-shadow: 0 4px 32px rgba(239, 68, 68, 0.15); }
+}
+
+/* Pulsing Dots */
+.pulse-emerald {
+  animation: pulseEmerald 1.2s infinite alternate;
+}
+@keyframes pulseEmerald {
+  0% { opacity: 0.5; box-shadow: 0 0 2px var(--color-success); }
+  100% { opacity: 1; box-shadow: 0 0 10px var(--color-success); }
+}
+
+.pulse-red {
+  animation: pulseRed 1.2s infinite alternate;
+}
+@keyframes pulseRed {
+  0% { opacity: 0.5; box-shadow: 0 0 2px var(--color-critical); }
+  100% { opacity: 1; box-shadow: 0 0 10px var(--color-critical); }
+}
+
+.pulse-purple {
+  animation: pulsePurple 1.2s infinite alternate;
+}
+@keyframes pulsePurple {
+  0% { opacity: 0.5; box-shadow: 0 0 2px var(--color-purple); }
+  100% { opacity: 1; box-shadow: 0 0 10px var(--color-purple); }
+}
+
+/* Radar visual sweep styles */
+.radar-sweep-effect {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(from 0deg, rgba(239, 68, 68, 0.15) 0deg, rgba(239, 68, 68, 0) 90deg);
+  border-radius: 50%;
+  transform-origin: center;
+  animation: sweepAnim 4s linear infinite;
+}
+@keyframes sweepAnim {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Circular Dashboard Gauge */
+.circle-front-fill {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 389.56;
+  transition: stroke-dashoffset 1s ease-in-out;
+}
+
+/* Executive Seating Positions */
+.meeting-table-layout {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(11, 18, 32, 0.6) 0%, rgba(5, 8, 22, 0.9) 100%);
+  border: 3px solid rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.55);
+}
+
+.executive-chair {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  z-index: 5;
+}
+
+/* Voice CTO core visualizer pulse */
+.voice-core-pulse {
+  animation: corePulse 2s infinite alternate;
+}
+@keyframes corePulse {
+  0% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 15px var(--color-cyan), 0 0 30px var(--color-cyan); }
+  100% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 25px var(--color-cyan), 0 0 50px var(--color-cyan); }
+}
+
+.voice-ring-spin-cw {
+  animation: spinCW 6s linear infinite;
+}
+.voice-ring-spin-ccw {
+  animation: spinCCW 8s linear infinite;
+}
+
+@keyframes spinCW {
+  100% { transform: rotate(360deg); }
+}
+@keyframes spinCCW {
+  100% { transform: rotate(-360deg); }
+}
