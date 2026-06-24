@@ -58,7 +58,10 @@ export async function POST(request: Request) {
     if (action === "verify") {
       const response = await fetch(`${gitlabUrl}/projects/${projectId}`, { headers });
       if (!response.ok) {
-        return NextResponse.json({ error: `Connection failed: ${response.statusText}` }, { status: response.status });
+        const errorData = await response.json().catch(() => ({}));
+        const msg = errorData.message;
+        const details = typeof msg === "string" ? msg : JSON.stringify(msg);
+        return NextResponse.json({ error: `Connection failed: ${response.statusText}`, details }, { status: response.status });
       }
       const data = await response.json();
       return NextResponse.json({
@@ -122,9 +125,11 @@ export async function POST(request: Request) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        const msg = errorData.message;
+        const details = typeof msg === "string" ? msg : JSON.stringify(msg) || "Unknown GitLab CI error";
         return NextResponse.json({ 
           error: `Trigger failed: ${response.statusText}`, 
-          details: errorData.message || "Unknown GitLab CI error"
+          details
         }, { status: response.status });
       }
 
