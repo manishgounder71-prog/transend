@@ -65,7 +65,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Demo Video
 
 <!-- TODO: Replace <your-video-id> with your actual YouTube video ID before submission -->
-[▶️ Watch the demo on YouTube](https://youtu.be/<your-video-id>) — under 3 minutes showing the full command center in action.
+[▶️ Watch the demo on YouTube](https://youtu.be/mjrQOzDj9Yc) — under 3 minutes showing the full command center in action.
 
 ### GitLab Integration (Optional)
 
