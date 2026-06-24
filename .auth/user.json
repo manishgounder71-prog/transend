@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "orbit_session",
+      "value": "a017f191dc27f1773a52c37563790897103a0dac3c311f846ef88235a52f01fa",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1782799649.159,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

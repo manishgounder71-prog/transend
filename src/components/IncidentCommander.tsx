@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { ShieldAlert, Terminal, FileText } from "lucide-react";
+import { dispatchGameEvent, recordHealthSnapshot } from "@/lib/gamification";
 
 interface IncidentLog {
   time: string;
@@ -42,6 +43,8 @@ export default function IncidentCommander() {
       } else {
         clearInterval(interval);
         setIncidentState("resolved");
+        dispatchGameEvent("incident:resolved");
+        recordHealthSnapshot(92 + Math.floor(Math.random() * 6));
       }
     }, 1800);
   };

@@ -1,0 +1,115 @@
+version: "3.8"
+
+services:
+  # ──────────────────────────────────────────────
+  # Nginx reverse proxy — SSL termination & routing
+  # ──────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/security-headers.conf:/etc/nginx/security-headers.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - certbot_data:/var/www/certbot
+    environment:
+      - NGINX_HOST=${NGINX_HOST:-localhost}
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - orbit_net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Certbot — automated Let's Encrypt SSL renewal
+  # ──────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - certbot_data:/var/www/certbot
+    entrypoint: >
+      sh -c "
+        if [ ! -f /etc/letsencrypt/live/${NGINX_HOST:-localhost}/fullchain.pem ]; then
+          echo 'ℹ️  No Let\\''s Encrypt certificate found. Requesting one for ${NGINX_HOST:-localhost}...'
+          certbot certonly --webroot -w /var/www/certbot
+            -d ${NGINX_HOST:-localhost}
+            --email ${LETSENCRYPT_EMAIL:-admin@${NGINX_HOST:-localhost}}
+            --agree-tos
+            --non-interactive
+            || echo '⚠️  Certbot failed. Using self-signed certs if available.'
+        else
+          echo '✓ Let\\''s Encrypt certificate found. Renewing if needed...'
+          certbot renew
+        fi
+      "
+    networks:
+      - orbit_net
+    restart: "no"
+    profiles:
+      - certbot
+
+  # ──────────────────────────────────────────────
+  # Production service — runs the built Next.js app
+  # ──────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/orbit.db
+      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      - GITLAB_ACCESS_TOKEN=${GITLAB_ACCESS_TOKEN:-}
+      - GITLAB_PROJECT_ID=${GITLAB_PROJECT_ID:-}
+      - GITLAB_API_URL=${GITLAB_API_URL:-https://gitlab.com/api/v4}
+    volumes:
+      - orbit_data:/app/data
+    networks:
+      - orbit_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/config/gitlab').then(r => process.exit(r.ok?0:1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ──────────────────────────────────────────────
+  # Development service — runs Next.js dev server
+  # ──────────────────────────────────────────────
+  dev:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:/app/data/orbit.db
+      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      - GITLAB_ACCESS_TOKEN=${GITLAB_ACCESS_TOKEN:-}
+      - GITLAB_PROJECT_ID=${GITLAB_PROJECT_ID:-}
+      - GITLAB_API_URL=${GITLAB_API_URL:-https://gitlab.com/api/v4}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - orbit_data:/app/data
+    networks:
+      - orbit_net
+    restart: unless-stopped
+
+networks:
+  orbit_net:
+    driver: bridge
+
+volumes:
+  orbit_data:
+    driver: local
+  certbot_data:
+    driver: local

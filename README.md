@@ -4,7 +4,9 @@
 
 Orbit CTO X is a next-generation command center that simulates how AI agents can manage, monitor, and orchestrate an entire software engineering organization. It combines real-time dashboards, predictive analytics, security wargaming, incident response simulation, and GitLab CI/CD integration into one immersive interface.
 
-Built for the **Transend International Hackathon 2026**.
+Built for the **GitLab Transcend Hackathon 2026** (Showcase Track) — an AI-native agent built on the GitLab Duo Agent Platform that leverages the GitLab Orbit context graph to provide intelligent orchestration across the software development lifecycle.
+
+> **Devpost Submission:** [gitlab-transcend.devpost.com](https://gitlab-transcend.devpost.com/)
 
 ---
 
@@ -59,6 +61,11 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Demo Video
+
+<!-- TODO: Replace <your-video-id> with your actual YouTube video ID before submission -->
+[▶️ Watch the demo on YouTube](https://youtu.be/<your-video-id>) — under 3 minutes showing the full command center in action.
 
 ### GitLab Integration (Optional)
 
@@ -140,4 +147,6 @@ src/
 
 ## 📄 License
 
-This project is submitted for the Transend International Hackathon 2026. All rights reserved.
+This project is submitted for the **GitLab Transcend Hackathon 2026** (Showcase Track).
+
+Licensed under the [MIT License](LICENSE) — see the [LICENSE](LICENSE) file for details.

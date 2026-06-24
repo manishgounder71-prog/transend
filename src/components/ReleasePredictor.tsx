@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Play, CheckCircle, Terminal, HelpCircle, AlertOctagon } from "lucide-react";
+import { dispatchGameEvent, recordHealthSnapshot } from "@/lib/gamification";
 
 interface RiskIndex {
   name: string;
@@ -83,6 +84,8 @@ export default function ReleasePredictor() {
         setConfidenceScore(calculatedConfidence);
         setHasScanned(true);
         setIsScanning(false);
+        dispatchGameEvent("risk:assessed");
+        recordHealthSnapshot(calculatedConfidence);
       }
     }, 700);
   };
@@ -124,14 +127,24 @@ export default function ReleasePredictor() {
               AI simulation modeling across 6 core risk indexes.
             </p>
           </div>
-          <button
-            disabled={isScanning}
-            onClick={runAssessment}
-            className="font-sans text-[10px] font-bold text-slate-950 bg-[#00f0ff] hover:bg-[#00f0ff]/80 transition rounded px-3.5 py-1.5 cursor-pointer disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed flex items-center gap-1.5 active:scale-[0.98]"
-          >
-            <Play size={10} fill="currentColor" />
-            Evaluate Release Risk
-          </button>
+          <div className="flex items-center gap-2">
+            {hasScanned && (
+              <button
+                onClick={runAssessment}
+                className="font-sans text-[10px] font-bold text-white/40 hover:text-white border border-white/10 hover:border-white/20 transition rounded px-3 py-1.5 cursor-pointer flex items-center gap-1.5"
+              >
+                ↻ Re-Scan
+              </button>
+            )}
+            <button
+              disabled={isScanning}
+              onClick={runAssessment}
+              className="font-sans text-[10px] font-bold text-slate-950 bg-gradient-to-r from-[#00f0ff] to-cyan-400 hover:from-[#00f0ff]/80 hover:to-cyan-400/80 transition rounded px-3.5 py-1.5 cursor-pointer disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed flex items-center gap-1.5 active:scale-[0.98] shadow-[0_0_12px_rgba(0,240,255,0.3)]"
+            >
+              <Play size={10} fill="currentColor" />
+              Evaluate Risk
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Scan terminal during scanning */}

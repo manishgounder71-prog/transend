@@ -1,60 +1,92 @@
 "use client";
 
 import React, { useState } from "react";
-import { GitFork, Users, Calendar, AlertOctagon, TrendingUp, HelpCircle } from "lucide-react";
-
-interface UniverseBranch {
-  name: string;
-  probability: string;
-  revenue: string;
-  incidents: string;
-  velocity: string;
-  vulnerabilities: string;
-  theme: "cyan" | "purple" | "warning";
-}
-
-const templates = [
-  { text: "What if we hire 2 engineers?", icon: Users },
-  { text: "What if release is delayed by 1 week?", icon: Calendar },
-  { text: "What if auth-service fails?", icon: AlertOctagon },
-  { text: "What if traffic increases 500%?", icon: TrendingUp }
-];
+import { HelpCircle } from "lucide-react";
+import { dispatchGameEvent } from "@/lib/gamification";
+import {
+  type UniverseBranch,
+  type AISimulationResult,
+  templates,
+  extractNumber,
+  formatCurrency,
+} from "./parallel/parallelData";
+import ParallelSimulatorInput from "./parallel/ParallelSimulatorInput";
+import ParallelSimulatorBranch from "./parallel/ParallelSimulatorBranch";
+import ParallelSimulatorAnalysis from "./parallel/ParallelSimulatorAnalysis";
 
 export default function ParallelSimulator({ onSimulate }: { onSimulate: () => void }) {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [aiStatus, setAiStatus] = useState<"idle" | "generating" | "fallback" | "ready">("idle");
   const [branches, setBranches] = useState<UniverseBranch[] | null>(null);
+  const [scenarioAnalysis, setScenarioAnalysis] = useState<string | null>(null);
+  const [metricsSummary, setMetricsSummary] = useState<AISimulationResult["metricsSummary"] | null>(null);
 
-  // Extract numeric values from a query string
-  const extractNumber = (text: string): number => {
-    const matches = text.match(/\d+/g);
-    if (matches && matches.length > 0) {
-      return parseInt(matches[0], 10);
+  // Fetch AI-generated simulation from the API
+  const fetchAISimulation = async (scenarioText: string): Promise<AISimulationResult | null> => {
+    try {
+      const response = await fetch("/api/ai/parallel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario: scenarioText }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.needsFallback) return null;
+        throw new Error(data.error || `API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data as AISimulationResult;
+    } catch (err) {
+      console.error("AI simulation fetch failed:", err);
+      return null;
     }
-    return 0;
   };
 
-  const formatCurrency = (val: number): string => {
-    if (Math.abs(val) >= 1000) return `${val >= 0 ? "+" : ""}$${Math.round(val / 1000)}k`;
-    return `${val >= 0 ? "+" : ""}$${val.toLocaleString()}`;
-  };
-
-  const runSimulation = (scenarioText?: string) => {
+  const runSimulation = async (scenarioText?: string) => {
     const targetQuery = scenarioText || query;
     if (!targetQuery.trim()) return;
-    
+
+    // Try AI first
     setIsLoading(true);
+    setIsLoadingAI(true);
+    setAiStatus("generating");
     setBranches(null);
-    onSimulate(); // Callback to trigger boardroom debate sync
+    setScenarioAnalysis(null);
+    setMetricsSummary(null);
+    onSimulate();
+
+    const aiResult = await fetchAISimulation(targetQuery);
+
+    if (aiResult && aiResult.branches && aiResult.branches.length === 3) {
+      setAiStatus("ready");
+      setIsLoadingAI(false);
+      const validatedBranches = aiResult.branches.map((b) => ({
+        ...b,
+        theme: b.theme as "cyan" | "purple" | "warning",
+      }));
+      setBranches(validatedBranches);
+      setScenarioAnalysis(aiResult.scenarioAnalysis);
+      setMetricsSummary(aiResult.metricsSummary);
+      setIsLoading(false);
+      dispatchGameEvent("parallel:simulated");
+      return;
+    }
+
+    // Fallback to local simulation engine
+    setAiStatus("fallback");
+    setIsLoadingAI(false);
 
     setTimeout(() => {
       setIsLoading(false);
       const cmd = targetQuery.toLowerCase();
       const num = extractNumber(cmd);
-      
+
       if (cmd.includes("hire") || cmd.includes("engineer")) {
-        // Dynamic: each engineer costs ~$12k/mo salary, boosts velocity by ~8%, revenue by $36k
-        const n = num || 2; // default to 2 engineers
+        const n = num || 2;
         const revenueBoost = n * 36000;
         const velocityBoost = Math.min(60, n * 8);
         const trainingCost = n * 5000;
@@ -68,7 +100,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.min(15, 2 + n)}% (Nominal)`,
             velocity: `+${velocityBoost}% (${n}× Dev Boost)`,
             vulnerabilities: "0 (All Patched)",
-            theme: "cyan"
+            theme: "cyan",
+            narrative: `Adding ${n} engineers accelerates feature delivery by ${velocityBoost}% with minimal disruption. Best-case execution with strong onboarding.`,
           },
           {
             name: `Universe B: Onboarding Overhead (×${n})`,
@@ -77,7 +110,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.min(30, 8 + n * 3)}% (PR review lag)`,
             velocity: `-${Math.min(25, 5 + n * 2)}% (Short-term lag)`,
             vulnerabilities: `${Math.min(4, Math.ceil(n / 2))} (Unreviewed)`,
-            theme: "purple"
+            theme: "purple",
+            narrative: `New hires require ${n}× onboarding overhead, temporarily slowing delivery velocity while senior engineers ramp up on the codebase.`,
           },
           {
             name: `Universe C: Peak Efficiency (×${n})`,
@@ -86,12 +120,13 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: "0% (All Clear)",
             velocity: `+${Math.min(80, velocityBoost * 2)}% (Peak Output)`,
             vulnerabilities: "0 (All Patched)",
-            theme: "warning"
-          }
+            theme: "warning",
+            narrative: `In a perfect scenario, ${n} engineers hit peak efficiency immediately — but this requires flawless integration rarely achieved in practice.`,
+          },
         ]);
+        setScenarioAnalysis(`Hiring ${n} engineers presents a ${Math.max(50, 85 - n * 3)}% probability of positive outcome, but carries short-term onboarding costs. The net benefit materializes after the initial ramp-up period.`);
       } else if (cmd.includes("delay") || cmd.includes("week") || cmd.includes("postpone")) {
-        // Dynamic: each week delay costs ~$18k/wk opportunity cost, but saves incident risk
-        const weeks = num || 1; // default to 1 week
+        const weeks = num || 1;
         const safeguardRevenue = weeks * 40000;
         const opportunityCost = weeks * 18000;
         const outageCost = weeks * 28000;
@@ -104,7 +139,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.max(0, 5 - weeks * 2)}% (Risks Cleared)`,
             velocity: `-${Math.min(30, 10 + weeks * 3)}% (${weeks}-wk Lag)`,
             vulnerabilities: "0 (All Patched)",
-            theme: "cyan"
+            theme: "cyan",
+            narrative: `A ${weeks}-week delay clears technical debt and reduces incident risk significantly. The safe window allows for comprehensive testing and security hardening.`,
           },
           {
             name: "Universe B: Ship Now Anyway",
@@ -113,7 +149,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.min(95, 60 + weeks * 12)}% (DB Thread Risk)`,
             velocity: "Nominal",
             vulnerabilities: `${Math.min(6, 1 + weeks)} (Unresolved)`,
-            theme: "purple"
+            theme: "purple",
+            narrative: `Shipping immediately captures short-term revenue but exposes the team to ${Math.min(95, 60 + weeks * 12)}% incident probability from unresolved technical debt.`,
           },
           {
             name: `Universe C: ${weeks}-Week Hotfix Cascade`,
@@ -122,9 +159,11 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.min(99, 85 + weeks * 5)}% (High Crash Risk)`,
             velocity: "+10% (Rushed Flow)",
             vulnerabilities: `${Math.min(8, 3 + weeks)} (High Alert)`,
-            theme: "warning"
-          }
+            theme: "warning",
+            narrative: `A rushed deployment triggers cascading hotfixes, resulting in ${Math.min(99, 85 + weeks * 5)}% incident probability and severe customer impact.`,
+          },
         ]);
+        setScenarioAnalysis(`A ${weeks}-week delay is the safest path with ${Math.min(92, 75 + weeks * 3)}% probability of success. The primary risk of shipping now is database thread pool exhaustion and cascading failures.`);
       } else if (cmd.includes("auth-service") || cmd.includes("fail") || cmd.includes("service")) {
         setBranches([
           {
@@ -134,7 +173,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: "2% (Negligible)",
             velocity: "Nominal",
             vulnerabilities: "0 (Patched)",
-            theme: "cyan"
+            theme: "cyan",
+            narrative: "Elastic routing and circuit breakers successfully isolate the auth-service failure. User-facing impact is minimal with automatic failover.",
           },
           {
             name: "Universe B: DB Cascading Lock",
@@ -143,7 +183,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: "98% (High Alert)",
             velocity: "-40% (Emergency Mode)",
             vulnerabilities: "3 (Vulnerable)",
-            theme: "purple"
+            theme: "purple",
+            narrative: "Database connection pool exhaustion cascades across services, causing a 3-hour outage. Emergency mode reduces all service capacity by 40%.",
           },
           {
             name: "Universe C: Chaos Recovery",
@@ -152,11 +193,12 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: "0% (Reset nominal)",
             velocity: "+5% (Fast Recycle)",
             vulnerabilities: "0",
-            theme: "warning"
-          }
+            theme: "warning",
+            narrative: "A rare scenario where rapid pod recycling and connection re-establishment results in zero downtime — but this requires perfect orchestration.",
+          },
         ]);
+        setScenarioAnalysis("Auth-service failure has a 90% chance of graceful degradation via elastic routing. The main risk is database connection pool cascading locks, which can cause multi-hour outages.");
       } else if (cmd.includes("traffic") || cmd.includes("%")) {
-        // Dynamic: parse traffic percentage multiplier
         const pct = num || 500;
         const multiplier = pct / 100;
         const revenueGain = Math.round(multiplier * 24000);
@@ -170,7 +212,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.min(20, Math.ceil(multiplier))}% (Replicas hold)`,
             velocity: "Nominal",
             vulnerabilities: "0",
-            theme: "cyan"
+            theme: "cyan",
+            narrative: `Auto-scaling handles ${pct}% traffic load seamlessly. Horizontal pod autoscaling provisions additional replicas to maintain throughput.`,
           },
           {
             name: `Universe B: Ingress Overload (${pct}%)`,
@@ -179,7 +222,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.min(95, 50 + Math.floor(multiplier * 5))}% (Thread Starvation)`,
             velocity: `-${Math.min(40, Math.floor(multiplier * 3))}% (Latency lock)`,
             vulnerabilities: `${Math.min(4, Math.ceil(multiplier / 2))}`,
-            theme: "purple"
+            theme: "purple",
+            narrative: `Ingress throttling under ${pct}% load causes thread starvation and severe latency degradation. Auto-scaling triggers too late to prevent impact.`,
           },
           {
             name: "Universe C: Rate Limiter Throttle",
@@ -188,11 +232,12 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: `${Math.min(30, Math.floor(multiplier * 3))}% (Soft restrict)`,
             velocity: "Nominal",
             vulnerabilities: "0",
-            theme: "warning"
-          }
+            theme: "warning",
+            narrative: `Rate limiters cut traffic to manageable levels, preventing total outage but causing revenue loss from throttled user requests.`,
+          },
         ]);
+        setScenarioAnalysis(`${pct}% traffic surge has a ${Math.max(55, 90 - Math.floor(multiplier * 3))}% probability of successful auto-scaling. The key risk is ingress overload causing thread starvation and customer-facing latency.`);
       } else {
-        // Fallback default
         setBranches([
           {
             name: "Universe A: Optimistic Branch",
@@ -201,7 +246,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: "5% (Low Risk)",
             velocity: "+12% (Optimal)",
             vulnerabilities: "0 (All Patched)",
-            theme: "cyan"
+            theme: "cyan",
+            narrative: "Best-case execution with successful team coordination, minimal technical debt, and favorable market conditions.",
           },
           {
             name: "Universe B: Nominal Branch",
@@ -210,7 +256,8 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: "15% (Typical load)",
             velocity: "Nominal",
             vulnerabilities: "1 (Medium CVE)",
-            theme: "purple"
+            theme: "purple",
+            narrative: "Standard operational conditions with moderate risks. Normal engineering throughput with average incident response.",
           },
           {
             name: "Universe C: Degraded Branch",
@@ -219,10 +266,14 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
             incidents: "75% (High Crash Risk)",
             velocity: "-18% (Technical Debt)",
             vulnerabilities: "4 (Critical CVE)",
-            theme: "warning"
-          }
+            theme: "warning",
+            narrative: "Worst-case scenario where unresolved technical debt, infrastructure instability, and security vulnerabilities compound into significant business impact.",
+          },
         ]);
+        setScenarioAnalysis("This scenario carries a 70% probability of positive outcome. The primary risks are technical debt accumulation and infrastructure stability under load.");
       }
+      // Fire game event for XP tracking on fallback simulation
+      dispatchGameEvent("parallel:simulated");
     }, 1500);
   };
 
@@ -231,85 +282,36 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
     runSimulation(text);
   };
 
-  const getBorderColor = (theme: string) => {
-    if (theme === "cyan") return "before:bg-[#00f0ff]";
-    if (theme === "purple") return "before:bg-[#a855f7]";
-    return "before:bg-[#f59e0b]";
-  };
-
-  const getProbColor = (theme: string) => {
-    if (theme === "cyan") return "text-[#00f0ff]";
-    if (theme === "purple") return "text-[#a855f7]";
-    return "text-[#f59e0b]";
-  };
-
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-      
-      {/* Simulation Prompt */}
-      <div className="glass-panel p-5">
-        <h3 className="text-sm font-bold text-white tracking-wide uppercase select-none">
-          Parallel Universe Simulation Engine
-        </h3>
-        <p className="text-[10px] text-white/40 mt-0.5 mb-4 leading-relaxed">
-          Forecast the impact of critical software decisions across multiple future branches (velocity, cost, incident probability, revenue impact).
-        </p>
+      <ParallelSimulatorInput
+        query={query}
+        isLoading={isLoading}
+        isLoadingAI={isLoadingAI}
+        aiStatus={aiStatus}
+        templates={templates}
+        onQueryChange={setQuery}
+        onEnterPress={() => runSimulation()}
+        onSimulate={() => runSimulation()}
+        onTemplateClick={handleTemplateClick}
+      />
 
-        {/* Query Input Deck */}
-        <div className="grid grid-cols-[24px_1fr_140px] items-center gap-3 bg-black/30 border border-white/5 rounded-lg px-4 py-2 w-full">
-          <GitFork size={14} className="text-[#00f0ff]" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") runSimulation();
-            }}
-            placeholder="Enter scenario (e.g. 'What if we delay launch 2 weeks to fix tech debt?')..."
-            className="bg-transparent border-none outline-none text-xs text-white placeholder-white/30 w-full"
-          />
-          <button
-            onClick={() => runSimulation()}
-            className="font-sans text-[11px] font-bold text-slate-950 bg-[#00f0ff] border-none rounded px-4 py-1.5 cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.4)] hover:shadow-[0_0_16px_rgba(0,240,255,0.6)] transition"
-          >
-            Simulate Branch
-          </button>
-        </div>
-
-        {/* Quick Scenario Templates list */}
-        <div className="mt-4 flex flex-col gap-2">
-          <span className="font-mono text-[9px] font-bold text-white/30 tracking-wider uppercase select-none">
-            💡 QUICK SCENARIO TEMPLATES
-          </span>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {templates.map((tpl, i) => {
-              const Icon = tpl.icon;
-              return (
-                <button
-                  key={i}
-                  onClick={() => handleTemplateClick(tpl.text)}
-                  className="glass-panel p-2.5 flex items-center gap-2.5 hover:border-[#00f0ff]/30 text-left transition hover:bg-white/2 cursor-pointer group active:scale-[0.98]"
-                >
-                  <Icon size={14} className="text-white/40 group-hover:text-[#00f0ff] transition" />
-                  <span className="text-[10px] text-white/60 font-semibold group-hover:text-white transition leading-tight">
-                    {tpl.text}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      {scenarioAnalysis && !isLoading && (
+        <ParallelSimulatorAnalysis
+          scenarioAnalysis={scenarioAnalysis}
+          metricsSummary={metricsSummary}
+        />
+      )}
 
       {/* Branches Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {isLoading && (
           <div className="col-span-3 glass-panel p-10 flex flex-col justify-center items-center gap-3 text-center">
             <svg className="w-9 h-9 text-[#00f0ff] animate-spin" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="3" stroke-dasharray="32 32"/>
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="32 32" />
             </svg>
             <h3 className="text-xs font-semibold font-mono text-white animate-pulse">
-              Calculating Parallel Realities...
+              {isLoadingAI ? "Consulting AI simulation engine..." : "Calculating Parallel Realities..."}
             </h3>
           </div>
         )}
@@ -324,49 +326,9 @@ export default function ParallelSimulator({ onSimulate }: { onSimulate: () => vo
         )}
 
         {!isLoading && branches && branches.map((branch, i) => (
-          <div 
-            key={i}
-            className={`glass-panel p-5 relative overflow-hidden flex flex-col justify-between min-h-[220px] before:content-[""] before:absolute before:top-0 before:left-0 before:w-1 before:h-full ${getBorderColor(branch.theme)} animate-in fade-in slide-in-from-bottom-4 duration-500`}
-            style={{ animationDelay: `${i * 150}ms` }}
-          >
-            <div>
-              <div className="flex justify-between items-center border-b border-white/5 pb-2 mb-3">
-                <h4 className="text-[11.5px] font-bold text-white tracking-tight">{branch.name}</h4>
-                <span className={`font-mono text-[9px] font-bold ${getProbColor(branch.theme)}`}>
-                  {branch.probability}
-                </span>
-              </div>
-              <div className="flex flex-col gap-2 font-mono text-[10.5px]">
-                <div className="flex justify-between border-b border-white/[0.02] pb-1">
-                  <span className="text-white/40">Revenue:</span>
-                  <span className="font-semibold text-[#10b981]">{branch.revenue}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/[0.02] pb-1">
-                  <span className="text-white/40">Incidents:</span>
-                  <span className="font-semibold text-slate-200">{branch.incidents}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/[0.02] pb-1">
-                  <span className="text-white/40">Velocity:</span>
-                  <span className="font-semibold text-[#00f0ff]">{branch.velocity}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/[0.02] pb-1">
-                  <span className="text-white/40">Vulnerabilities:</span>
-                  <span className="font-semibold text-slate-200">{branch.vulnerabilities}</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Visual dashed connector lines */}
-            <div className="h-4 border-t border-dashed border-white/10 relative mt-4">
-              <span className="absolute -top-1 left-[30%] w-1.5 h-1.5 rounded-full bg-[#0072ff] animate-ping" />
-              <span className="absolute -top-1 left-[30%] w-1.5 h-1.5 rounded-full bg-[#0072ff]" />
-              <span className="absolute -top-1 left-[70%] w-1.5 h-1.5 rounded-full bg-[#a855f7] animate-ping" />
-              <span className="absolute -top-1 left-[70%] w-1.5 h-1.5 rounded-full bg-[#a855f7]" />
-            </div>
-          </div>
+          <ParallelSimulatorBranch key={i} branch={branch} index={i} />
         ))}
       </div>
-
     </div>
   );
 }

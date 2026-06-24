@@ -20,6 +20,10 @@
 # production
 /build
 
+# database
+*.db
+*.db-journal
+
 # misc
 .DS_Store
 *.pem
@@ -32,6 +36,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +44,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# database write-ahead logs and testing reports
+*.db-shm
+*.db-wal
+dev.db*
+dev.test-*.db*
+test-results/
+playwright-report/
+"D：Transend.env.example"
+"D：Transendsrcappapiaiparallel"
+"D：Transendsrcappapiairagingest"
+"D：Transendsrcappapiairagsearch"
+"D：Transendsrccomponentsboardroom"
+"D：Transendsrccomponentsdigitaltwin"
+"D：Transendsrccomponentsgitlab"
+"D：Transendnginxssl"
+"D：Transendscripts"
+"D：Transend.auth"
+"D：Transend.githubworkflows"
+
+

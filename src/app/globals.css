@@ -1,13 +1,22 @@
 @import "tailwindcss";
 
-:root {
+/* ───── Dark Theme (default) ───── */
+:root,
+[data-theme="dark"] {
   --background: #050816;
   --foreground: #ffffff;
   
   --bg-base: #050816;
   --bg-surface: #0b1220;
   --bg-glass: rgba(11, 18, 32, 0.45);
+  --bg-glass-hover: rgba(11, 18, 32, 0.55);
   --border-glass: rgba(255, 255, 255, 0.06);
+  --border-glass-hover: rgba(255, 255, 255, 0.12);
+  
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --text-muted: rgba(255, 255, 255, 0.25);
   
   --color-cyan: #00f0ff;
   --color-blue: #0072ff;
@@ -15,6 +24,116 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-critical: #ef4444;
+  
+  --glow-cyan: rgba(0, 240, 255, 0.4);
+  --glow-purple: rgba(168, 85, 247, 0.4);
+  --glow-success: rgba(16, 185, 129, 0.3);
+  
+  --gauge-track: rgba(0, 0, 0, 0.25);
+  --input-bg: rgba(0, 0, 0, 0.35);
+  --input-border: rgba(255, 255, 255, 0.05);
+  --scrollbar-track: rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --sidebar-bg: rgba(5, 8, 22, 0.35);
+  --hover-bg: rgba(255, 255, 255, 0.02);
+  --active-bg: rgba(0, 240, 255, 0.05);
+  --active-border: rgba(0, 240, 255, 0.15);
+  
+  --bubble-purple: 0.25;
+  --bubble-blue: 0.25;
+  --glow-bubbles: block;
+}
+
+/* ───── Light / High-Contrast Theme ───── */
+[data-theme="light"] {
+  --background: #f0f4f8;
+  --foreground: #0b1220;
+  
+  --bg-base: #f0f4f8;
+  --bg-surface: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.75);
+  --bg-glass-hover: rgba(255, 255, 255, 0.92);
+  --border-glass: rgba(11, 18, 32, 0.08);
+  --border-glass-hover: rgba(11, 18, 32, 0.16);
+  
+  --text-primary: #0b1220;
+  --text-secondary: rgba(11, 18, 32, 0.7);
+  --text-tertiary: rgba(11, 18, 32, 0.45);
+  --text-muted: rgba(11, 18, 32, 0.25);
+  
+  --color-cyan: #0284c7;
+  --color-blue: #1d4ed8;
+  --color-purple: #7c3aed;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-critical: #dc2626;
+  
+  --glow-cyan: rgba(2, 132, 199, 0.3);
+  --glow-purple: rgba(124, 58, 237, 0.3);
+  --glow-success: rgba(5, 153, 102, 0.3);
+  
+  --gauge-track: rgba(0, 0, 0, 0.08);
+  --input-bg: rgba(255, 255, 255, 0.8);
+  --input-border: rgba(11, 18, 32, 0.1);
+  --scrollbar-track: rgba(0, 0, 0, 0.05);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  --panel-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.08);
+  --sidebar-bg: rgba(255, 255, 255, 0.6);
+  --hover-bg: rgba(0, 0, 0, 0.02);
+  --active-bg: rgba(2, 132, 199, 0.08);
+  --active-border: rgba(2, 132, 199, 0.2);
+  
+  --bubble-purple: 0.08;
+  --bubble-blue: 0.08;
+  --glow-bubbles: block;
+}
+
+/* ───── High-Contrast Theme ───── */
+[data-theme="high-contrast"] {
+  --background: #ffffff;
+  --foreground: #000000;
+  
+  --bg-base: #ffffff;
+  --bg-surface: #f8f9fa;
+  --bg-glass: rgba(248, 249, 250, 0.95);
+  --bg-glass-hover: rgba(248, 249, 250, 1);
+  --border-glass: rgba(0, 0, 0, 0.15);
+  --border-glass-hover: rgba(0, 0, 0, 0.25);
+  
+  --text-primary: #000000;
+  --text-secondary: rgba(0, 0, 0, 0.75);
+  --text-tertiary: rgba(0, 0, 0, 0.55);
+  --text-muted: rgba(0, 0, 0, 0.35);
+  
+  --color-cyan: #0369a1;
+  --color-blue: #1d4ed8;
+  --color-purple: #6d28d9;
+  --color-success: #047857;
+  --color-warning: #b45309;
+  --color-critical: #dc2626;
+  
+  --glow-cyan: rgba(3, 105, 161, 0.15);
+  --glow-purple: rgba(109, 40, 217, 0.15);
+  --glow-success: rgba(4, 120, 87, 0.15);
+  
+  --gauge-track: rgba(0, 0, 0, 0.1);
+  --input-bg: rgba(255, 255, 255, 1);
+  --input-border: rgba(0, 0, 0, 0.2);
+  --scrollbar-track: rgba(0, 0, 0, 0.05);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.35);
+  --panel-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.06);
+  --sidebar-bg: rgba(248, 249, 250, 0.8);
+  --hover-bg: rgba(0, 0, 0, 0.03);
+  --active-bg: rgba(2, 132, 199, 0.1);
+  --active-border: rgba(2, 132, 199, 0.3);
+  
+  --bubble-purple: 0;
+  --bubble-blue: 0;
+  --glow-bubbles: none;
 }
 
 @theme inline {
@@ -27,11 +146,12 @@
 /* Global Reset & Ambient UI */
 body {
   background-color: var(--bg-base);
-  color: var(--foreground);
+  color: var(--text-primary);
   font-family: 'Outfit', sans-serif;
   min-height: 100vh;
   overflow: hidden;
   position: relative;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Ambient glow bubbles in background */
@@ -41,7 +161,7 @@ body {
   filter: blur(140px);
   z-index: 1;
   pointer-events: none;
-  opacity: 0.25;
+  display: var(--glow-bubbles);
 }
 
 .bubble-purple {
@@ -50,6 +170,7 @@ body {
   width: 450px;
   height: 450px;
   background: radial-gradient(circle, var(--color-purple) 0%, transparent 70%);
+  opacity: var(--bubble-purple);
 }
 
 .bubble-blue {
@@ -58,6 +179,7 @@ body {
   width: 500px;
   height: 500px;
   background: radial-gradient(circle, var(--color-blue) 0%, transparent 70%);
+  opacity: var(--bubble-blue);
 }
 
 /* Custom Scrollbars */
@@ -66,14 +188,14 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* HUD Glitch Badge */
@@ -83,16 +205,16 @@ body {
   font-weight: 700;
   color: var(--color-cyan);
   letter-spacing: 0.2em;
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  text-shadow: 0 0 10px var(--glow-cyan);
 }
 
 /* Glowing Typography */
 .glow-text-cyan {
-  text-shadow: 0 0 8px var(--color-cyan);
+  text-shadow: 0 0 8px var(--glow-cyan);
 }
 
 .glow-text-purple {
-  text-shadow: 0 0 8px var(--color-purple);
+  text-shadow: 0 0 8px var(--glow-purple);
 }
 
 /* Glassmorphism Panels */
@@ -100,24 +222,43 @@ body {
   background: var(--bg-glass);
   border: 1px solid var(--border-glass);
   border-radius: 12px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: var(--panel-shadow);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .glass-panel:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-glass-hover);
 }
 
 /* Glow Border Indicators */
-.glow-border-success { border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 4px 24px rgba(16, 185, 129, 0.06); }
-.glow-border-success:hover { border-color: rgba(16, 185, 129, 0.45); box-shadow: 0 4px 32px rgba(16, 185, 129, 0.15); }
+.glow-border-success { 
+  border-color: var(--color-success); 
+  border-opacity: 0.3; 
+  box-shadow: 0 4px 24px var(--glow-success); 
+}
+.glow-border-success:hover { 
+  border-color: var(--color-success); 
+  box-shadow: 0 4px 32px var(--glow-success); 
+}
 
-.glow-border-blue { border-color: rgba(0, 114, 255, 0.3); box-shadow: 0 4px 24px rgba(0, 114, 255, 0.06); }
-.glow-border-blue:hover { border-color: rgba(0, 114, 255, 0.45); box-shadow: 0 4px 32px rgba(0, 114, 255, 0.15); }
+.glow-border-blue { 
+  border-color: var(--color-blue); 
+  border-opacity: 0.3; 
+  box-shadow: 0 4px 24px var(--glow-cyan); 
+}
+.glow-border-blue:hover { 
+  border-color: var(--color-blue); 
+  box-shadow: 0 4px 32px var(--glow-cyan); 
+}
 
-.glow-border-critical { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 4px 24px rgba(239, 68, 68, 0.06); animation: redCardPulse 4s infinite alternate; }
+.glow-border-critical { 
+  border-color: var(--color-critical); 
+  border-opacity: 0.3; 
+  box-shadow: 0 4px 24px rgba(239, 68, 68, 0.06); 
+  animation: redCardPulse 4s infinite alternate; 
+}
 @keyframes redCardPulse {
   0% { box-shadow: 0 4px 24px rgba(239, 68, 68, 0.05); }
   100% { box-shadow: 0 4px 32px rgba(239, 68, 68, 0.15); }
@@ -140,12 +281,12 @@ body {
   100% { opacity: 1; box-shadow: 0 0 10px var(--color-critical); }
 }
 
-.pulse-purple {
-  animation: pulsePurple 1.2s infinite alternate;
+.pulse-cyan {
+  animation: pulseCyan 1.2s infinite alternate;
 }
-@keyframes pulsePurple {
-  0% { opacity: 0.5; box-shadow: 0 0 2px var(--color-purple); }
-  100% { opacity: 1; box-shadow: 0 0 10px var(--color-purple); }
+@keyframes pulseCyan {
+  0% { opacity: 0.5; box-shadow: 0 0 2px var(--color-cyan); }
+  100% { opacity: 1; box-shadow: 0 0 10px var(--color-cyan); }
 }
 
 /* Radar visual sweep styles */
@@ -177,10 +318,10 @@ body {
   position: relative;
   width: 260px;
   height: 260px;
-  background: radial-gradient(circle, rgba(11, 18, 32, 0.6) 0%, rgba(5, 8, 22, 0.9) 100%);
-  border: 3px solid rgba(255, 255, 255, 0.05);
+  background: radial-gradient(circle, var(--bg-surface) 0%, var(--bg-base) 100%);
+  border: 3px solid var(--border-glass);
   border-radius: 50%;
-  box-shadow: 0 0 35px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.15);
 }
 
 .executive-chair {
@@ -217,4 +358,51 @@ body {
 }
 @keyframes spinCCW {
   100% { transform: rotate(-360deg); }
+}
+
+/* Theme toggle transition */
+.theme-transitioning * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Floating particle animation for LandingScreen */
+@keyframes float-particle {
+  0% { transform: translateY(0px) translateX(0px); opacity: 0.1; }
+  50% { opacity: 0.3; }
+  100% { transform: translateY(-30px) translateX(10px); opacity: 0.1; }
+}
+
+/* Scanning line animation for LandingScreen */
+@keyframes scan-line {
+  0% { top: -1px; }
+  100% { top: 100%; }
+}
+
+/* Time Machine range slider */
+.time-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.time-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--glow-cyan);
+}
+.time-range-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-cyan);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--glow-cyan);
 }

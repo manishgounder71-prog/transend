@@ -1,0 +1,181 @@
+# ============================================================
+# Orbit CTO X — CI/CD Pipeline
+# ============================================================
+# Triggers:
+#   - push to main → test, build, push Docker image, deploy
+#   - pull request → test + build (no push/deploy)
+#   - manual dispatch → full pipeline
+#
+# Required GitHub Secrets:
+#   See the "secrets" section below for all required secrets.
+# ============================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  # ── Container Registry ───────────────────────
+  # Change to docker.io/<username> for Docker Hub
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+  # ── Node ─────────────────────────────────────
+  NODE_VERSION: "20"
+
+jobs:
+  # ── Job 1: Test ──────────────────────────────
+  test:
+    name: 🧪 Test & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  # ── Job 2: Build & Push Docker Image ─────────
+  build:
+    name: 🐳 Build & Push Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test]
+    # Only build on push to main/master (not on PRs or manual runs without approval)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Login to Container Registry ──────────
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: Log in to Docker Hub
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # ── Extract metadata ─────────────────────
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=,suffix=,format=short
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # ── Build & Push ─────────────────────────
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Generate attestation ─────────────────
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  # ── Job 3: Deploy to VPS via SSH ─────────────
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build]
+    # Only deploy on push to default branch
+    if: github.ref_name == github.event.repository.default_branch && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT || '22' }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "🚀 Deploying Orbit CTO X..."
+
+            # Navigate to deployment directory
+            cd ${{ secrets.DEPLOY_PATH || '/opt/orbit-cto-x' }}
+
+            # Pull the latest image using a deploy token with read:packages scope
+            # Create a PAT at https://github.com/settings/tokens and store as DEPLOY_TOKEN secret
+            echo "${{ secrets.DEPLOY_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull app
+
+            # Recreate the app container
+            docker compose up -d --force-recreate app
+
+            # Wait for healthcheck
+            echo "⏳ Waiting for app to become healthy..."
+            sleep 10
+            for i in {1..12}; do
+              if docker compose ps app | grep -q "healthy"; then
+                echo "✅ App is healthy!"
+                break
+              fi
+              echo "  Waiting... ($i/12)"
+              sleep 5
+            done
+
+            # Clean up old images
+            docker image prune -f
+
+            echo "✅ Deployment complete!"
