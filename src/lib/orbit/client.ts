@@ -34,12 +34,12 @@ function runOrbit(
   args: string[],
   options: ExecSyncOptions = {},
 ): { stdout: string; stderr: string } {
-  const stdout = execSync(`${ORBIT_CLI} ${args.join(" ")}`, {
-    encoding: "utf-8",
+  const result = execSync(`${ORBIT_CLI} ${args.join(" ")}`, {
     maxBuffer: 10 * 1024 * 1024,
     ...options,
+    encoding: "utf-8",
   });
-  return { stdout, stderr: "" };
+  return { stdout: result, stderr: "" };
 }
 
 function runOrbitSafe(
